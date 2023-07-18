@@ -25,6 +25,7 @@
     "framer-motion": "^6.3.16",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
+    "lottie-web": "^5.12.2",
     "material-ui-popup-state": "^4.0.1",
     "pdfmake": "^0.2.7",
     "prop-types": "^15.8.1",
