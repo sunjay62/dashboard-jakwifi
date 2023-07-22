@@ -907,7 +907,12 @@ const TotalChart = () => {
 
   return (
     <div>
-      <MainCard title="Jakwifi Analysis">
+      <MainCard>
+        <Grid item xs={12}>
+          <div className="containerHeadNew">
+            <h2>JakWifi Analysis</h2>
+          </div>
+        </Grid>
         <ToastContainer />
         <div className="dateContainer">
           <div className="dateLeft">

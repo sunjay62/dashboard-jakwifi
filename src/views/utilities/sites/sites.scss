@@ -1,3 +1,13 @@
+.containerHeadNew {
+  border-bottom: 2px solid grey;
+  margin-bottom: 25px;
+  padding-bottom: 10px;
+
+  h2 {
+    color: #777777;
+  }
+}
+
 .dateContainer {
   display: flex;
   justify-content: space-between;

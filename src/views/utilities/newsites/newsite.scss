@@ -1,7 +1,19 @@
-.gridButton {
+.containerHead {
   display: flex;
-  justify-content: end;
+  justify-content: space-between;
   align-items: center;
+  border-bottom: 2px solid grey;
+  margin-bottom: 5x;
+  padding-bottom: 10px;
+
+  h2 {
+    color: #777777;
+  }
+}
+
+.headerModal {
+  text-align: center;
+  font-weight: 600;
 }
 
 .css-1iyq7zh-MuiDataGrid-columnHeaders {

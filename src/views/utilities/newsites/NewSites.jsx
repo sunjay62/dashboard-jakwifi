@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PlusCircleOutlined } from '@ant-design/icons';
 import { Button, Modal, Form, Input } from 'antd';
 import MainCard from 'ui-component/cards/MainCard';
@@ -17,27 +17,136 @@ import './newsite.scss';
 
 const NewSite = () => {
   const [name, setName] = useState('');
-  const [id, setId] = useState('');
+  const [idData, setIdData] = useState('');
   const [ip, setIp] = useState('');
+  const [nameEdit, setNameEdit] = useState('');
+  const [id, setId] = useState('');
+  const [ipEdit, setIpEdit] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [users, setUsers] = useState([]);
+  const formRef = useRef(null); // Buat referensi untuk form instance
+  const [idDataValid, setIdDataValid] = useState(false);
+  const [nameValid, setNameValid] = useState(false);
+  const [ipValid, setIpValid] = useState(false);
 
   const showModal = () => {
     setIsModalOpen(true);
   };
 
   const handleOk = () => {
-    if (!name || !id || !ip) {
+    if (!idDataValid || !nameValid || !ipValid || !name || !idData || !ip) {
       toast.error('Please fill in all fields.');
       return;
+    }
+
+    if (formRef.current) {
+      formRef.current.submit();
     }
 
     handleSubmit();
     setIsModalOpen(false);
   };
 
+  const handleIdChange = (event) => {
+    const value = event.target.value;
+    setIdData(value);
+    setIdDataValid(!!value); // Set status validasi menjadi true jika value tidak kosong
+  };
+
+  const handleNameChange = (event) => {
+    const value = event.target.value;
+    setName(value);
+    setNameValid(!!value); // Set status validasi menjadi true jika value tidak kosong
+  };
+
+  // Fungsi untuk memeriksa apakah nilai IP valid sebagai alamat IPv4
+  const isIPv4Valid = (value) => {
+    const ipPattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+    return ipPattern.test(value);
+  };
+
+  const handleIpChange = (event) => {
+    const value = event.target.value;
+    setIp(value);
+    setIpValid(isIPv4Valid(value));
+  };
+
   const handleCancel = () => {
     setIsModalOpen(false);
+    setName('');
+    setIdData('');
+    setIp('');
+  };
+
+  //INI UNTUK MODAL EDIT TEMPLATE
+  const [isModalOpenEdit, setIsModalOpenEdit] = useState(false);
+
+  const showModalEdit = (id) => {
+    setId(id);
+    setIsModalOpenEdit(true);
+  };
+
+  const handleOkEdit = () => {
+    setIsModalOpenEdit(false);
+  };
+
+  const handleCancelEdit = () => {
+    setIsModalOpenEdit(false);
+  };
+
+  const handleIdChangeEdit = (event) => {
+    setId(event.target.value);
+  };
+  const handleNameChangeEdit = (event) => {
+    setNameEdit(event.target.value);
+  };
+  const handleIpChangeEdit = (event) => {
+    setIpEdit(event.target.value);
+  };
+
+  // INI UNTUK GET DATA UPDATE
+
+  useEffect(() => {
+    axiosNew
+      .get(`/site/${id}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then((res) => {
+        console.log(res.data);
+
+        setId(res.data.id);
+        setNameEdit(res.data.name);
+        setIpEdit(res.data.public_ip);
+      })
+      .catch((err) => console.log(err));
+  }, [id]);
+
+  const handleSubmitUpdate = (event) => {
+    event.preventDefault();
+
+    const updatedUserData = {
+      id,
+      name: nameEdit,
+      public_ip: ipEdit
+    };
+    axiosNew
+      .put(`/site`, updatedUserData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then((response) => {
+        if (response.status === 200) {
+          toast.success('Updated Successfully.');
+          getApi();
+          handleOkEdit();
+        } else {
+          setError('Failed to update, please try again.');
+        }
+      })
+      .catch((err) => console.log(err));
   };
 
   // FUNGSI UNTUK UPDATE DATA SETELAH ACTION
@@ -66,7 +175,8 @@ const NewSite = () => {
   // INI API UNTUK CREATE NEW SITE
 
   const handleSubmit = async () => {
-    const postData = { name: name, id: id, public_ip: ip };
+    // Jika validasi sukses, lanjutkan dengan menyimpan data
+    const postData = { name: name, id: idData, public_ip: ip };
     try {
       const response = await axiosNew.post('/site', postData, {
         headers: {
@@ -78,7 +188,7 @@ const NewSite = () => {
 
       if (response.status === 200) {
         setName('');
-        setId('');
+        setIdData('');
         setIp('');
         toast.success('Registered Successfully.');
         getApi();
@@ -175,10 +285,7 @@ const NewSite = () => {
             <div className="cellAction">
               <Tooltip title="Edit" arrow>
                 <div className="viewButtonOperator">
-                  <DriveFileRenameOutlineIcon
-                    className="viewIcon"
-                    // onClick={() => handleShowEdit(rowData.id)}
-                  />
+                  <DriveFileRenameOutlineIcon className="viewIcon" onClick={() => showModalEdit(rowData.id)} />
                 </div>
               </Tooltip>
               <Tooltip title="Delete" arrow>
@@ -231,27 +338,10 @@ const NewSite = () => {
     }
   };
 
-  const validateMessages = {
-    required: '${label} is required!',
-    types: {
-      email: '${label} is not a valid email!'
-    }
-  };
-
-  const validateIPv4 = (rule, value, callback) => {
-    const ipPattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
-
-    if (!ipPattern.test(value)) {
-      callback('Invalid IPv4 address!');
-    } else {
-      callback();
-    }
-  };
-
   return (
-    <MainCard title="Jakwifi Sites">
+    <MainCard>
       <ToastContainer />
-      <Modal title="Input New Site" centered onOk={handleOk} onCancel={handleCancel} open={isModalOpen}>
+      <Modal title="Edit JakWiFi Site" centered open={isModalOpenEdit} onOk={handleSubmitUpdate} onCancel={handleCancelEdit}>
         <Form
           {...layout}
           name="nest-messages"
@@ -259,10 +349,8 @@ const NewSite = () => {
             maxWidth: 600,
             marginTop: 25
           }}
-          validateMessages={validateMessages}
         >
           <Form.Item
-            name={['user', 'id']}
             label="ID Site"
             rules={[
               {
@@ -270,10 +358,9 @@ const NewSite = () => {
               }
             ]}
           >
-            <Input value={id} onChange={(e) => setId(e.target.value)} />
+            <Input type="text" value={id} onChange={handleIdChangeEdit} />
           </Form.Item>
           <Form.Item
-            name={['user', 'name']}
             label="Name Site"
             rules={[
               {
@@ -281,28 +368,85 @@ const NewSite = () => {
               }
             ]}
           >
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <Input type="text" value={nameEdit} onChange={handleNameChangeEdit} />
           </Form.Item>
           <Form.Item
-            name={['user', 'ip']}
             label="IP Public"
             rules={[
               {
-                required: true,
-                validator: validateIPv4
+                required: true
               }
             ]}
           >
-            <Input style={{ width: '50%' }} value={ip} onChange={(e) => setIp(e.target.value)} />
+            <Input type="text" value={ipEdit} onChange={handleIpChangeEdit} />
           </Form.Item>
         </Form>
       </Modal>
 
+      <Modal title="Input New Site" centered onOk={handleOk} onCancel={handleCancel} open={isModalOpen}>
+        <Form
+          {...layout}
+          name="nest-messages"
+          ref={formRef} // Menghubungkan formRef dengan Form instance
+          style={{
+            maxWidth: 600,
+            marginTop: 25
+          }}
+        >
+          <Form.Item
+            label="ID Site"
+            rules={[
+              {
+                required: true,
+                message: 'Please input the ID Site!'
+              }
+            ]}
+            validateStatus={!idDataValid ? 'error' : ''}
+            help={!idDataValid ? 'ID Site is required!' : ''}
+          >
+            <Input value={idData} onChange={handleIdChange} />
+          </Form.Item>
+          <Form.Item
+            label="Name Site"
+            rules={[
+              {
+                required: true,
+                message: 'Please input the Name Site!'
+              }
+            ]}
+            validateStatus={!nameValid ? 'error' : ''}
+            help={!nameValid ? 'Name Site is required!' : ''}
+          >
+            <Input value={name} onChange={handleNameChange} />
+          </Form.Item>
+          <Form.Item
+            label="IP Public"
+            rules={[
+              {
+                required: true,
+                validator: (_, value) => {
+                  if (isIPv4Valid(value)) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error('Please input a valid IPv4 address!'));
+                }
+              }
+            ]}
+            validateStatus={!ipValid ? 'error' : ''}
+            help={!ipValid ? 'IP Public is required and must be a valid IPv4 address!' : ''}
+          >
+            <Input style={{ width: '50%' }} value={ip} onChange={handleIpChange} />
+          </Form.Item>
+        </Form>
+      </Modal>
       <Grid container spacing={gridSpacing}>
-        <Grid item xs={12} className="gridButton">
-          <Button type="primary" icon={<PlusCircleOutlined />} onClick={showModal}>
-            Add New
-          </Button>
+        <Grid item xs={12}>
+          <div className="containerHead">
+            <h2>JakWifi Sites</h2>
+            <Button type="primary" icon={<PlusCircleOutlined />} onClick={showModal}>
+              Add New
+            </Button>
+          </div>
         </Grid>
         <Grid item xs={12}>
           <DataGrid
